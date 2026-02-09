@@ -53,3 +53,52 @@ int GetStateOutputGPIOA(int current_state) {
 int GetStateOutputGPIOB(int current_state) {
     return 0;
 };
+
+// Increments the hour while keeping minute the same
+int IncrementHour(int current_state)
+{
+    int hour = current_state / 12;
+    int minute = current_state % 12;
+
+    // Increment hour and wrap around
+    hour = (hour + 1) % 12;
+
+    // Reconstruct state
+    return (hour * 12) + minute;
+}
+
+// Increments the minute while keeping hour the same
+int IncrementMinute(int current_state)
+{
+    int hour = current_state / 12;
+    int minute = current_state % 12;
+
+    // Increment minute and wrap around
+    minute = (minute + 1) % 12;
+
+    // Reconstruct state
+    return (hour * 12) + minute;
+}
+
+
+
+// Returns pattern with hour off and minute on
+int FlashHour(int current_state)
+{
+    int minute = current_state % 12;
+    uint32_t minute_pin = minute_pins[minute];
+
+    // Only invert the minute pin, which keeps the hour pin off. 
+    return ~minute_pin;
+}
+
+// Returns pattern with minute off and hour on 
+int FlashMinute(int current_state)
+{
+    int hour = current_state / 12;
+    uint32_t hour_pin = hour_pins[hour];
+
+    // Only invert the hour pin, which keeps the minute pin off. 
+    return ~hour_pin;
+}
+

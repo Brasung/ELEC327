@@ -3,13 +3,13 @@
 #include <ti/devices/msp/msp.h>
 
 #define POWER_STARTUP_DELAY (16)
-
 void InitializeGPIO() {
     // 1. Reset GPIO port (the one(s) for pins that you will use)
     GPIOA->GPRCM.RSTCTL = (GPIO_RSTCTL_KEY_UNLOCK_W | GPIO_RSTCTL_RESETSTKYCLR_CLR | GPIO_RSTCTL_RESETASSERT_ASSERT);
-
+    GPIOB->GPRCM.RSTCTL = (GPIO_RSTCTL_KEY_UNLOCK_W | GPIO_RSTCTL_RESETSTKYCLR_CLR | GPIO_RSTCTL_RESETASSERT_ASSERT);
     // 2. Enable power on LED GPIO port
     GPIOA->GPRCM.PWREN = (GPIO_PWREN_KEY_UNLOCK_W | GPIO_PWREN_ENABLE_ENABLE);
+    GPIOB->GPRCM.PWREN = (GPIO_PWREN_KEY_UNLOCK_W | GPIO_PWREN_ENABLE_ENABLE);
 
     delay_cycles(POWER_STARTUP_DELAY); // delay to enable GPIO to turn on and reset
 
@@ -40,7 +40,10 @@ void InitializeGPIO() {
     IOMUX->SECCFG.PINCM[(IOMUX_PINCM59)] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000001)); //init pa26 led 1a
     IOMUX->SECCFG.PINCM[(IOMUX_PINCM60)] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000001)); //init pa27 led 12b
 
-
+    IOMUX->SECCFG.PINCM[(IOMUX_PINCM25)] = (IOMUX_PINCM_PC_CONNECTED | //init PB8 button
+                            IOMUX_PINCM_INENA_ENABLE |      // Enable input
+                            IOMUX_PINCM_PIPU_ENABLE |       // Enable pull-up
+                            ((uint32_t) 0x00000001)); 
 
     GPIOA->DOUT31_0 = (0xFFFFFFFF); //Turn off all LEDs by default with active low
                       
@@ -68,5 +71,5 @@ void InitializeGPIO() {
     GPIOA->DOESET31_0 = (1 << 25); // PA25
     GPIOA->DOESET31_0 = (1 << 26); // PA26
     GPIOA->DOESET31_0 = (1 << 27); // PA27
-    
+    GPIOB->DOESET31_0 &= ~(1 << 8); // set the button to INPUT mode
 }

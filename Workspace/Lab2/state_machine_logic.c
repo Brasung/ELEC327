@@ -1,27 +1,53 @@
 #include "state_machine_logic.h"
 #include <ti/devices/msp/msp.h>
+//Lookup table for hour LEDs
+const uint32_t hour_pins[12] = {
+    (1<<0),  // 12A (PA0)
+    (1<<26), // 1A  (PA26)
+    (1<<24), // 2A  (PA24)
+    (1<<22), // 3A  (PA22)
+    (1<<18), // 4A  (PA18)
+    (1<<16), // 5A  (PA16)
+    (1<<14), // 6A  (PA14)
+    (1<<12), // 7A  (PA12)
+    (1<<10),  // 8A  (PA10)
+    (1<<8),  // 9A  (PA8)
+    (1<<6),  // 10A (PA6)
+    (1<<28)  // 11A (PA28)
+};
+//Lookup table for minute LEDs
+const uint32_t minute_pins[12] = {
+    (1<<27), // 12B (PA27)
+    (1<<25), // 1B  (PA25)
+    (1<<23), // 2B  (PA23)
+    (1<<21), // 3B  (PA21)
+    (1<<17), // 4B  (PA17)
+    (1<<15), // 5B  (PA15)
+    (1<<13), // 6B  (PA13)
+    (1<<11), // 7B  (PA11)
+    (1<<9), // 8B  (PA9)
+    (1<<7),  // 9B  (PA7)
+    (1<<5),  // 10B (PA5)
+    (1<<1)   // 11B (PA1)
+};
 
-
-int GetNextState(int current_state)
+int GetNextState(int current_state) //Update state given current state
 {
-    if (current_state == OFF) {
-        return ON1; // If the LED is off -> on
+    if (current_state < 143) {
+        return current_state + 1; // Increment state by 1
     }
     else {
-        if (current_state == ON1)
-            return ON2;
-        else
-            return OFF; // If the LED is on -> off
+            //Reset to 0 if state is 144
+            return 0;
     }
 }
 
 int GetStateOutputGPIOA(int current_state) {
-    if ((current_state == ON1) || (current_state == ON2)) {
-        return 0x00000000;
-    }
-    else {
-        return 0x00000001;
-    }
+    int hour = current_state / 12; //Get hour using integer division
+    int minute = current_state % 12; //Get minute using modulus
+    uint32_t hour_pin = hour_pins[hour];  //Get hour pin
+    uint32_t minute_pin = minute_pins[minute]; //Get minute pin
+    return ~(hour_pin | minute_pin); //Invert because LEDs are active low
 }
 
 int GetStateOutputGPIOB(int current_state) {

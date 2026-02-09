@@ -1,6 +1,6 @@
 /*
  * This template file implements an interrupt-driven infinite loop which
- * cycles a state machine.
+ * cycles a state machine with Software PWM for power saving.
  */
 
 #include <ti/devices/msp/msp.h>
@@ -8,8 +8,9 @@
 #include "initialize_leds.h"
 #include "state_machine_logic.h"
 
-/* This results in approximately 1s of delay assuming 32 MHz CPU_CLK */
-#define DELAY (32000000)
+
+#define TIMER_LOAD_VALUE (128) //how many ticks to sleep
+#define TICKS_PER_SECOND (256) 
 
 int main(void)
 {
@@ -41,37 +42,60 @@ int main(void)
     SYSCTL->SOCLOCK.MCLKCFG |= SYSCTL_MCLKCFG_STOPCLKSTBY_ENABLE;
     /* --------------------------------------------------------------------- */
 
+    int state = 0; //initialize state machine
+    int pwm_tick_counter = 0;
+    int one_second_counter = 0;
+    int current_led_pattern = 0;
 
-    int state = 0; // initialize state machine
-
-    TIMG0->COUNTERREGS.LOAD = 32000; // This will load as soon as timer is enabled
+    // Load timer for 256 Hz interrupt rate
+    TIMG0->COUNTERREGS.LOAD = TIMER_LOAD_VALUE; 
     TIMG0->COUNTERREGS.CTRCTL |= (GPTIMER_CTRCTL_EN_ENABLED);
     NVIC_EnableIRQ(TIMG0_INT_IRQn); // Enable the timer interrupt
 
-    // Functional
-    while (1) {
-        int output = GetStateOutputGPIOA(state);
-        GPIOA->DOUT31_0 = output;
+    //Initialize the first pattern
+    current_led_pattern = GetStateOutputGPIOA(state);
 
-        state = GetNextState(state);
-        __WFI(); // Go to sleep until timer counts down again.
+while (1) {
+        //PWM Logic
+        if (pwm_tick_counter == 0) {
+
+            GPIOA->DOUT31_0 = current_led_pattern; //Light up LEDs
+            
+        } else {
+            //Turn everything off (active low)
+            GPIOA->DOUT31_0 = 0xFFFFFFFF; 
+        }
+
+        // sleep
+        __WFI(); 
+
+        pwm_tick_counter++; //increment counter
+        if (pwm_tick_counter >= 4) {
+            //reset every 4 ticks
+            pwm_tick_counter = 0;
+        }
+
+        one_second_counter++;
+        //move onto next state
+        if (one_second_counter >= TICKS_PER_SECOND) {
+            state = GetNextState(state);
+            current_led_pattern = GetStateOutputGPIOA(state);
+            one_second_counter = 0;
+        }
     }
 }
 
-
-// The function needs to be put into the interrupt table!!!!
 void TIMG0_IRQHandler(void)
 {
-    // This wakes up the processor!
     switch (TIMG0->CPU_INT.IIDX) {
-        case GPTIMER_CPU_INT_IIDX_STAT_Z: // Counted down to zero event.
-            // If we wanted to execute code in the ISR, it would go here.
+        case GPTIMER_CPU_INT_IIDX_STAT_Z:
             break;
         default:
             break;
     }
 }
 
+//AI disclaimer: I used LLMs to debug
 
 /*
  * Copyright (c) 2026, Caleb Kemere
