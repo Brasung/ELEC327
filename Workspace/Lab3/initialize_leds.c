@@ -1,6 +1,6 @@
 #include "initialize_leds.h"
-#include "delay.h"
 #include <ti/devices/msp/msp.h>
+#include "hw_interface.h"
 
 #define POWER_STARTUP_DELAY (16)
 void InitializeGPIO() {

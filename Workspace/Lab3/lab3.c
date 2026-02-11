@@ -4,42 +4,21 @@
  */
 
 #include <ti/devices/msp/msp.h>
-#include "delay.h"
 #include "initialize_leds.h"
 #include "state_machine_logic.h"
+#include "hw_interface.h"
+
 
 #define TIMER_LOAD_VALUE (128) //how many ticks to sleep
 #define TICKS_PER_SECOND (256) 
 #define BUTTON_PIN_8 (1 << 8)
 int main(void)
 {
-    InitializeGPIO();
+    InitializeLEDs();
+    InitializeButton();
     
-    /* --------------------------------------------------------------------- */
-    /* Timer module and Sleep Mode Initialization */
-    // 1. Step 1 is always to reset and enable
-    TIMG0->GPRCM.RSTCTL = (GPIO_RSTCTL_KEY_UNLOCK_W | GPIO_RSTCTL_RESETSTKYCLR_CLR | GPIO_RSTCTL_RESETASSERT_ASSERT);
-    TIMG0->GPRCM.PWREN = (GPIO_PWREN_KEY_UNLOCK_W | GPIO_PWREN_ENABLE_ENABLE);
-    delay_cycles(16); // delay to enable module to turn on and reset
-
-    // 2. Step 2 is to choose the desired clock. We want UPCLK (LFCLK) so we can use a LPM
-    // TIMG0->CLKSEL = GPTIMER_CLKSEL_BUSCLK_SEL_ENABLE;
-    TIMG0->CLKSEL = GPTIMER_CLKSEL_LFCLK_SEL_ENABLE;
-
-    // 3. By default, the timer counts down to zero and then stops. Configure it to repeat.
-    TIMG0->COUNTERREGS.CTRCTL = GPTIMER_CTRCTL_REPEAT_REPEAT_1;
-
-    // 4. Enable timer interrupt when we reach 0
-    TIMG0->CPU_INT.IMASK |= GPTIMER_CPU_INT_IMASK_Z_SET;
-
-    // 5. Enable the clock input to the timer. (The timer itself is still not enabled!)
-    TIMG0->COMMONREGS.CCLKCTL = GPTIMER_CCLKCTL_CLKEN_ENABLED;
-    // 6. Set sleep to be STANDBY (Rev 2025 TRM p. 227, also 2.4.2 Operating Mode Selection)
-    SYSCTL->SOCLOCK.PMODECFG = SYSCTL_PMODECFG_DSLEEP_STANDBY;
-    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-    // Set sleep to be STANDBY1 (Rev 2025 TRM Table 2-9. MSPM0Gxx ULPCLK by Operating Mode)
-    SYSCTL->SOCLOCK.MCLKCFG |= SYSCTL_MCLKCFG_STOPCLKSTBY_ENABLE;
-    /* --------------------------------------------------------------------- */
+    // Timer module and Sleep Mode Initialization 
+    InitializeTimerG0();
 
     int state = 0; //initialize state machine
     int pwm_tick_counter = 0; //counts from 0-3
@@ -52,9 +31,8 @@ int main(void)
     int flash_timer = 0; //counts from 0-255, representing 1 second, in all modes
 
     // Load timer for 256 Hz interrupt rate
-    TIMG0->COUNTERREGS.LOAD = TIMER_LOAD_VALUE; 
-    TIMG0->COUNTERREGS.CTRCTL |= (GPTIMER_CTRCTL_EN_ENABLED);
-    NVIC_EnableIRQ(TIMG0_INT_IRQn); // Enable the timer interrupt
+    SetTimerG0Delay(TIMER_LOAD_VALUE);
+    EnableTimerG0();
 
     //Initialize the first pattern
     current_led_pattern = GetStateOutputGPIOA(state);
@@ -158,16 +136,6 @@ while (1) {
             long_press = 0;
         }
 
-    }
-}
-
-void TIMG0_IRQHandler(void)
-{
-    switch (TIMG0->CPU_INT.IIDX) {
-        case GPTIMER_CPU_INT_IIDX_STAT_Z:
-            break;
-        default:
-            break;
     }
 }
 
