@@ -24,13 +24,18 @@ int main(void)
 
     // VERY BASIC LOOP - If button 1 signals a 0, enable the PWM
     while (1) {
-        uint32_t input = GPIOA->DIN31_0 & SW1;
-        if (input == 0) {
+        uint32_t input = GPIOA->DIN31_0 & (SW1 + SW2 + SW3 + SW4);
+        if ((input & SW1) == 0) { // active low!
             TIMA1->COUNTERREGS.CTRCTL |= (GPTIMER_CTRCTL_EN_ENABLED); // Enable the buzzer
         }
         else {
             TIMA1->COUNTERREGS.CTRCTL &= ~(GPTIMER_CTRCTL_EN_ENABLED); // Disable the buzzer
         }
+
+        // The above is just a basic example I expect you to implement functions that look something like this:
+        // SetPWMPeriodAndEnablement(state);
+        // state = GetNextState(state, input);
+
         __WFI(); // Go to sleep until timer counts down again.
     }
 

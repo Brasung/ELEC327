@@ -28,6 +28,32 @@ void DisableTimerA1PWM(void) {
 // ====================================================================================================================
 // ====================================================================================================================
 
+void delay_cycles(uint32_t cycles)
+{
+    /* this is a scratch register for the compiler to use */
+    uint32_t scratch;
+
+    /* There will be a 2 cycle delay here to fetch & decode instructions
+     * if branch and linking to this function */
+
+    /* Subtract 2 net cycles for constant offset: +2 cycles for entry jump,
+     * +2 cycles for exit, -1 cycle for a shorter loop cycle on the last loop,
+     * -1 for this instruction */
+
+    __asm volatile(
+#ifdef __GNUC__
+        ".syntax unified\n\t"
+#endif
+        "SUBS %0, %[numCycles], #2; \n"
+        "%=: \n\t"
+        "SUBS %0, %0, #4; \n\t"
+        "NOP; \n\t"
+        "BHS  %=b;" /* branches back to the label defined above if number > 0 */
+        /* Return: 2 cycles */
+        : "=&r"(scratch)
+        : [ numCycles ] "r"(cycles));
+}
+
 
 void InitializeGPIO(void) {
     GPIOA->GPRCM.RSTCTL = (GPIO_RSTCTL_KEY_UNLOCK_W | GPIO_RSTCTL_RESETSTKYCLR_CLR | GPIO_RSTCTL_RESETASSERT_ASSERT);
@@ -116,7 +142,6 @@ void InitializeTimerA1_PWM(void) {
     TIMA1->CLKDIV = GPTIMER_CLKDIV_RATIO_DIV_BY_4; // Divide by 4 to make PWM clock frequency 8 MHz
 
     TIMA1->COUNTERREGS.CCACT_01[0] = GPTIMER_CCACT_01_ZACT_CCP_HIGH | GPTIMER_CCACT_01_CUACT_CCP_LOW;
-    TIMA1->COUNTERREGS.CCACT_01[1] = GPTIMER_CCACT_01_ZACT_CCP_HIGH | GPTIMER_CCACT_01_CUACT_CCP_LOW;
     TIMA1->COUNTERREGS.CTRCTL = GPTIMER_CTRCTL_REPEAT_REPEAT_1 | GPTIMER_CTRCTL_CM_UP |
             GPTIMER_CTRCTL_CVAE_ZEROVAL | GPTIMER_CTRCTL_EN_DISABLED;
     TIMA1->COMMONREGS.CCPD = GPTIMER_CCPD_C0CCP0_OUTPUT | GPTIMER_CCPD_C0CCP1_OUTPUT;
