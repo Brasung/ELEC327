@@ -1,6 +1,11 @@
+#include "state_machine.h"
+
 int GetNextState(int current_state) //Update state given current state
 {
-    if (current_state == 0) {
-        return current_state + 1; // Increment state by 1
+    switch (current_state) {
+        case MUSIC: return INTERNOTE;
+        case INTERNOTE: return MUSIC; //swap between internote and note
+        case BUTTONS:   return BUTTONS;  //stays in button mode
+        default:    return MUSIC;
     }
 }
