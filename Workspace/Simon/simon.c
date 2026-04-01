@@ -34,8 +34,13 @@ int main(void)
     state.buzzer.period = 3999;
     state.buzzer.sound_on = false;
     state.leds = &leds_off;
-    state.mode = MODE_BUTTONS;
-
+    state.mode = MODE_STARTUP;
+    
+    state.sequence_length = 0;
+    state.show_index = 0;
+    state.input_index = 0;
+    state.play_counter = 0;
+    
     uint32_t input;
 
     SetTimerG0Delay(PERIOD); // 20 ticks at 32 kHz is 0.6 ms

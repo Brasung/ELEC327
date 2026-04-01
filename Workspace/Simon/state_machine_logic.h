@@ -12,7 +12,7 @@
 
 #define BUTTON_BOUNCE_LIMIT 3
 
-#define SIXTEENTH_NOTE 200
+#define SIXTEENTH_NOTE 800 // this is actually a quarter note
 
 /* For our state machine, we need to think about the MODE, the SOUND, and the BUTTONS */
 
@@ -66,8 +66,11 @@ typedef struct {
 
 /* And last, let's define the possible modes */
 typedef enum {
-    MODE_SONG = 0,
-    MODE_BUTTONS
+    MODE_STARTUP,
+    MODE_PLAYING,
+    MODE_WAIT,
+    MODE_WIN,
+    MODE_LOSE
 } mode_t;
 
 
@@ -78,6 +81,11 @@ typedef struct {
     const leds_message_t *leds;
     mode_t mode;
     song_state_t song_state; 
+    
+    uint8_t sequence_length;
+    uint8_t show_index;
+    uint8_t input_index;
+    uint32_t play_counter;
 } state_t;
 
 

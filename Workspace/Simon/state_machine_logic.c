@@ -7,6 +7,8 @@
 #include "colors.h"
 
 const uint32_t button_mask[] = {SW1, SW2, SW3, SW4};
+const uint16_t button_tones[] = {NOTE_E4, NOTE_G4, NOTE_C4, NOTE_E3};
+const leds_message_t *button_colors[] = {&leds_blue, &leds_red, &leds_green, &leds_yellow};
 
 button_t UpdateButton(button_t button, uint32_t input, uint32_t mask) {
     button_t new_button = button;
@@ -49,22 +51,68 @@ state_t GetNextState(state_t current_state, uint32_t input)
         new_state.buttons[i] = UpdateButton(current_state.buttons[i], input, button_mask[i]);
         if (new_state.buttons[i].state == BUTTON_PRESS)
             button_pressed = button_pressed + 1;
+        
     }
 
-    // Update buzzer state
-    new_state.buzzer.sound_on = false;
-    new_state.leds = &leds_off;
-
-    for (int i =0; i < 4; i++) {
-        if (new_state.buttons[i].state == BUTTON_PRESS) {
-            new_state.buzzer.period = G5_LOAD;
-            new_state.buzzer.sound_on = true;
-            new_state.leds = &leds_on;
+switch (current_state.mode) {
+    case MODE_STARTUP: {
+        // Check if any button was pressed to exit startup
+        if (button_pressed > 0) {
+            new_state.mode = MODE_PLAYING;
+            new_state.buzzer.sound_on = false;
+            new_state.leds = &leds_off;
             break;
         }
+
+        // Play the startup animation/song
+        song_state_t *ss = &new_state.song_state;
+        ss->music_counter++;
+
+        if (ss->note_state == PLAYING_NOTE) {
+            new_state.buzzer.period = animation[ss->index].note.period;
+            new_state.buzzer.sound_on = animation[ss->index].note.sound_on;
+            new_state.leds = animation[ss->index].leds;
+
+            if (ss->music_counter >= animation[ss->index].duration * SIXTEENTH_NOTE) {
+                ss->music_counter = 0;
+                ss->note_state = INTERNOTE;
+            }
+        } else {
+            new_state.buzzer.sound_on = false;
+            new_state.leds = &leds_off;
+
+            if (ss->music_counter >= SIXTEENTH_NOTE / 4) {
+                ss->music_counter = 0;
+                ss->note_state = PLAYING_NOTE;
+                ss->index++;
+                if (ss->index >= animation_length) {
+                    ss->index = 0;
+                }
+            }
+        }
+        break;
     }
 
+    case MODE_PLAYING: {
+        new_state.buzzer.sound_on = false;
+        new_state.leds = &leds_off;
 
+        for (int i = 0; i < 4; i++) {
+            if (new_state.buttons[i].state == BUTTON_PRESS) {
+                new_state.buzzer.period = button_tones[i];
+                new_state.buzzer.sound_on = true;
+                new_state.leds = button_colors[i];
+                break;
+            }
+        }
+        break;
+    }
+
+    default:
+        new_state.buzzer.sound_on = false;
+        new_state.leds = &leds_off;
+        break;
+}
     return new_state;
 }
 
