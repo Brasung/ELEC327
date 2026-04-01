@@ -78,14 +78,26 @@ int main(void)
     delay_cycles(10000);
     
     while (1) {
-        send_byte(0); // G
         send_byte(0x20); // R
-        send_byte(0x00); // B        
+        send_byte(0x05); // G
+        send_byte(0x05); // B
+
+        // Switch shared neoxpixel/button pin to input
+        IOMUX->SECCFG.PINCM[IOMUX_PINCM25] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000000));        
+
+        // Could do something with button here!
+
         __WFI(); // Go to sleep until timer counts down again.
-        send_byte(0); // G
+        // Switch shared neoxpixel/button pin to output
+        IOMUX->SECCFG.PINCM[IOMUX_PINCM25] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000001));
+
+
         send_byte(0); // R
+        send_byte(0); // G
         send_byte(0); // B        
+        IOMUX->SECCFG.PINCM[IOMUX_PINCM25] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000000));        
         __WFI(); // Go to sleep until timer counts down again.
+        IOMUX->SECCFG.PINCM[IOMUX_PINCM25] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000001));
     }
 
 }
