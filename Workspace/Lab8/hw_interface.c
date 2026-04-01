@@ -40,9 +40,9 @@ void InitializeLED() {
     delay_cycles(POWER_STARTUP_DELAY); // delay to enable GPIO to turn on and reset
 
     // Neopixel is connected to PA0
-    IOMUX->SECCFG.PINCM[IOMUX_PINCM1] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000001));
-    GPIOA->DOUTSET31_0 = 0x0; // default to zero
-    GPIOA->DOESET31_0 = 0x1;
+    IOMUX->SECCFG.PINCM[IOMUX_PINCM25] = (IOMUX_PINCM_PC_CONNECTED | ((uint32_t) 0x00000001));
+    GPIOA->DOUT31_0 = 0x1000000; // default to zero
+    GPIOA->DOESET31_0 = 0x1000000;
 
 }
 

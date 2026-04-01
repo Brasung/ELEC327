@@ -31,25 +31,26 @@ uint32_t generate_neopixel(char color) {
 #define NOP16 do { NOP8; NOP8; } while(0)
 #define NOP32 do { NOP16; NOP16; } while(0)
 
-static inline void send_bit(uint32_t bit) {
+
+static inline void send_bit(uint32_t bit) __attribute__((always_inline)) {
     if (bit) {
         // T1H: ~800 ns high
-        GPIOA->DOUTSET31_0 = 0x1;
+        GPIOA->DOUTSET31_0 = 0x1 << 24;
         NOP16; 
         // T1L: ~450 ns low
-        GPIOA->DOUTCLR31_0 = 0x1;
+        GPIOA->DOUTCLR31_0 = 0x1 << 24;
         NOP8;
     } else {
         // T0H: ~400 ns high
-        GPIOA->DOUTSET31_0 = 0x1;
+        GPIOA->DOUTSET31_0 = 0x1 << 24;
         NOP8; 
         // T0L: ~850 ns low
-        GPIOA->DOUTCLR31_0 = 0x1;
+        GPIOA->DOUTCLR31_0 = 0x1 << 24;
         NOP16;
     }
 }
 
-static inline void send_byte(uint8_t b) {
+static inline void send_byte(uint8_t b) __attribute__((always_inline)) {
     #pragma clang loop unroll(full)
     for (int i = 7; i >= 0; i--) {
         send_bit((b >> i) & 1);
@@ -74,16 +75,16 @@ int main(void)
     SetTimerG0Delay(32000); // 1 s interrupts
     EnableTimerG0();
 
+    delay_cycles(10000);
+    
     while (1) {
-        // Read-Modify-Write
-        // int current_gpio_state = GPIOA->DOUT31_0;
-        // current_gpio_state &= ~(led_mask); // Make the pins that we might want to edit zeros
-        // int output = GetStateOutput(state);
-        // state = GetNextState(state, input);
-        send_byte(0xAA); // G
-        send_byte(0x77); // R
-        send_byte(0x55); // B
-        
+        send_byte(0); // G
+        send_byte(0x20); // R
+        send_byte(0x00); // B        
+        __WFI(); // Go to sleep until timer counts down again.
+        send_byte(0); // G
+        send_byte(0); // R
+        send_byte(0); // B        
         __WFI(); // Go to sleep until timer counts down again.
     }
 
