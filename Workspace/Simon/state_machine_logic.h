@@ -12,7 +12,7 @@
 
 #define BUTTON_BOUNCE_LIMIT 3
 
-#define SIXTEENTH_NOTE 800 // this is actually a quarter note
+#define SIXTEENTH_NOTE 200 
 
 /* For our state machine, we need to think about the MODE, the SOUND, and the BUTTONS */
 
@@ -66,14 +66,14 @@ typedef struct {
 
 /* And last, let's define the possible modes */
 typedef enum {
-    MODE_STARTUP,
-    MODE_PLAYING,
-    MODE_WAIT,
-    MODE_WIN,
+    MODE_STARTUP, //startup song
+    MODE_PLAYING, //displaying correct sequence
+    MODE_WAIT, //waiting for user to input sequence
+    MODE_WIN, 
     MODE_LOSE
 } mode_t;
 
-
+#define MAX_SEQUENCE 5 //CHANGE THIS TO CONTROL WIN CONDITION
 /* Finally, we can define our state machine state*/
 typedef struct {
     button_t buttons[4];
@@ -82,10 +82,11 @@ typedef struct {
     mode_t mode;
     song_state_t song_state; 
     
-    uint8_t sequence_length;
-    uint8_t show_index;
-    uint8_t input_index;
-    uint32_t play_counter;
+    uint8_t sequence[MAX_SEQUENCE];
+    uint8_t sequence_length; //number of notes in sequence
+    uint8_t show_index; //current note being lit
+    uint8_t input_index; //current input received
+    int32_t play_counter; //counter for general time keeping -- needs to be signed
 } state_t;
 
 
@@ -95,5 +96,8 @@ void SetBuzzerState(buzzer_state_t);
 
 extern const animation_note_t animation[];
 extern const int animation_length;
-
+extern const animation_note_t lose_song[];
+extern const int lose_song_length;
+extern const animation_note_t win_song[];
+extern const int win_song_length;
 #endif /* state_machine_logic_include */
